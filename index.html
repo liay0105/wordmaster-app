@@ -1217,14 +1217,37 @@ function speakCurrentSpell() {
   if (w) speakWord(w.word);
 }
 
+// Persistent audio reference — prevents GC in mobile browsers
+let _ttsAudio = null;
+let _ttsUnlocked = false;
+
 function speakWord(word) {
-  // Youdao TTS — accessible in China
-  const w = word || (currentPack[fcIndex] && currentPack[fcIndex].word);
+  var w = word || (currentPack[fcIndex] && currentPack[fcIndex].word);
   if (!w) return;
-  const url = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(w) + '&type=1';
-  const audio = new Audio(url);
-  audio.play().catch(() => {});
+  var url = 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(w) + '&type=1';
+  try {
+    _ttsAudio = new Audio();
+    _ttsAudio.src = url;
+    _ttsAudio.volume = 1;
+    _ttsAudio.play().catch(function(err) {
+      console.log('TTS play failed:', err.message);
+    });
+  } catch(e) { console.log('TTS error:', e); }
 }
+
+// Unlock audio on first user interaction (required by mobile browsers)
+function unlockAudio() {
+  if (_ttsUnlocked) return;
+  _ttsUnlocked = true;
+  var unlockAudio = new Audio();
+  unlockAudio.src = 'https://dict.youdao.com/dictvoice?audio=hello&type=1';
+  unlockAudio.volume = 0.01;
+  unlockAudio.play().catch(function() {});
+  document.removeEventListener('touchstart', unlockAudio, true);
+  document.removeEventListener('click', unlockAudio, true);
+}
+document.addEventListener('touchstart', unlockAudio, { passive: true });
+document.addEventListener('click', unlockAudio, { passive: true });
 
 // ======================== QUIZ ========================
 let quizWords = [];
