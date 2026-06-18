@@ -830,6 +830,7 @@
   <div class="quiz-word" id="quiz-word">apple</div>
   <div class="quiz-phonetic" id="quiz-phonetic">/ˈæpəl/</div>
   <div class="quiz-question">这个单词的意思是？</div>
+  <button class="speaker-btn" id="quiz-speak-btn" onclick="speakCurrentQuiz()" style="margin:0 auto 16px;display:flex;">🔊 听发音</button>
 
   <div class="quiz-options" id="quiz-options"></div>
 </div>
@@ -870,6 +871,7 @@
   <div class="spell-word-display">
     <div class="spell-chinese" id="spell-chinese">苹果</div>
   </div>
+  <button class="speaker-btn" onclick="speakCurrentSpell()" style="margin:0 auto 12px;display:flex;">🔊 听发音</button>
 
   <div class="spell-blanks" id="spell-blanks"></div>
 
@@ -1205,13 +1207,27 @@ function markDont() {
   }, 700);
 }
 
-function speakWord() {
-  const w = currentPack[fcIndex].word;
-  if (window.speechSynthesis) {
-    const u = new SpeechSynthesisUtterance(w);
-    u.lang = 'en-US'; u.rate = 0.85;
-    window.speechSynthesis.speak(u);
-  }
+function speakCurrentQuiz() {
+  const w = quizWords[state.quizIndex];
+  if (w) speakWord(w.word);
+}
+
+function speakCurrentSpell() {
+  const w = spellWords[state.spellIndex];
+  if (w) speakWord(w.word);
+}
+
+function speakWord(word) {
+  // Use Google Translate TTS — most reliable across WebViews/mobile browsers
+  const w = word || (currentPack[fcIndex] && currentPack[fcIndex].word);
+  if (!w) return;
+  const url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(w) + '&tl=en&client=tw-ob';
+  const audio = new Audio(url);
+  audio.play().catch(() => {
+    // Fallback: direct GT URL variant
+    const alt = new Audio('https://translate.google.com/?sl=en&tl=zh-CN&text=' + encodeURIComponent(w) + '&op=translate');
+    alt.play().catch(() => {});
+  });
 }
 
 // ======================== QUIZ ========================
